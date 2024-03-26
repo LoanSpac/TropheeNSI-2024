@@ -1,5 +1,4 @@
 from os import system
-import subprocess
 import tkinter as tk
 from tkinter.font import Font
 
@@ -75,7 +74,7 @@ class TextApp(tk.Frame):
         self.text.bind("<<Change>>", self._on_change)
         self.text.bind("<Configure>", self._on_change)
 
-        #self.text.insert("end", "one\ntwo\nthree\n")
+        self.text.insert("end", "from game import *\n\n\n\nlancer()")
         #self.text.insert("end", "four\n",("bigfont",))
         #self.text.insert("end", "five\n")
 
@@ -88,17 +87,17 @@ class TextApp(tk.Frame):
         self.linenumbers.redraw()
 
     def save_and_run(self):
-        with open('pyrate_code.py', 'w') as file:
+        with open('pyrates_code.py', 'w') as file:
             file.write(self.text.get('1.0', 'end'))
         # Add lines filter config
-        system("pyrate_code.py")
+        system("pyrates_code.py")
 
 if __name__ == '__main__':
     root = tk.Tk()
     width, height = root.winfo_screenwidth() / 3.415, root.winfo_screenheight() / 1.28
 
     # configure window
-    root.title("Pyrate - Code")
+    root.title("Pyrates - Code")
     root.geometry(f"{round(width)}x{round(height)}")
     root.iconbitmap("img/favicon.ico")
 

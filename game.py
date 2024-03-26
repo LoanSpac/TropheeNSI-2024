@@ -1,88 +1,215 @@
 import pygame
 import sys
-import subprocess
 
-# Initialisation de l'interface de code
-subprocess.Popen(["python", "interface.py"], creationflags=subprocess.CREATE_NEW_CONSOLE)
+# Définition de la liste des instructions à utiliser
+instructions = []
 
-# Initialisation de Pygame
-pygame.init()
+class Pyrates:
+    def __init__(self):
 
-# Définition des paramètres de la fenêtre
-TPS = 20
-BLOCK_SIZE = 50
-WIDTH, HEIGHT = BLOCK_SIZE*18, BLOCK_SIZE*7
+        # Initialisation de Pygame
+        pygame.init()
 
-# Création de la fenêtre
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pyrate - Game")
-pygame.display.set_icon(pygame.image.load("img\\favicon.ico"))
+        # Définition des paramètres de la fenêtre
+        self.TPS = 20
+        self.BLOCK_SIZE = 50
+        self.WIDTH, self.HEIGHT = self.BLOCK_SIZE * 18, self.BLOCK_SIZE * 7
 
+        # Création de la fenêtre
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("Pyrates - Game")
+        pygame.display.set_icon(pygame.image.load("img\\favicon.ico"))
 
-#création du fond (ca marche pas)
-#background_image = pygame.image.load("images\\images\\fond.jpg").convert()
+        # Chargement des assets
+        self.assets = [("img\\fond.png", (self.WIDTH, self.HEIGHT)), ("img\\bloc_pierre.png", (self.BLOCK_SIZE, self.BLOCK_SIZE)),
+                  ("img\\bloc_sable.png", (self.BLOCK_SIZE, self.BLOCK_SIZE)),
+                  ("img\\bouteille.png", (self.BLOCK_SIZE / 1.5, self.BLOCK_SIZE)), ("img\\caisse.png", (self.BLOCK_SIZE, self.BLOCK_SIZE)),
+                  ("img\\cle.png", (self.BLOCK_SIZE, self.BLOCK_SIZE / 1.5)),
+                  ("img\\coffre.png", (self.BLOCK_SIZE, self.BLOCK_SIZE)), ("img\\Palmier.png", (self.BLOCK_SIZE, self.BLOCK_SIZE)),
+                  ("img\\Pierre.png", (self.BLOCK_SIZE, self.BLOCK_SIZE / 2)), ("img\\pont.png", (self.BLOCK_SIZE, self.BLOCK_SIZE / 2)),
+                  ("img\\Tonneau.png", (self.BLOCK_SIZE, self.BLOCK_SIZE)), ("img\\Jack.png", (self.BLOCK_SIZE, self.BLOCK_SIZE))]
 
-# Charger les images des textures des blocs
-#block_texture = pygame.image.load("Desktop\projet\Projet Pyrate\images\images\bloc.pierre.png")
+        self.asset_textures = []
 
+        for asset in self.assets:
+            asset_texture = pygame.transform.scale(pygame.image.load(asset[0]), asset[1])
+            self.asset_textures.append(asset_texture)
 
-blocks = ["img\\bloc_pierre.png", "img\\bloc_sable.png", "img\\bouteille.png", "img\\caisse.png", "img\\cle.png", "img\\coffre.png",
-         "img\\Palmier.png", "img\\Pierre.png", "img\\pont.png", "img\\Tonneau.png"]
+        # Définition de la matrice de la map
+        self.map_matrice = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [(11, 0), 0, 6, 0, 2, 0, 0, 1, 2, 3, 4, 8, 9, 6, 0, 0, 0, 0],
+            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+        ]
 
-assets = [("img\\fond.png", (WIDTH, HEIGHT)), ("img\\bloc_pierre.png", (BLOCK_SIZE, BLOCK_SIZE)), ("img\\bloc_sable.png", (BLOCK_SIZE, BLOCK_SIZE)), ("img\\bouteille.png", (BLOCK_SIZE/1.5, BLOCK_SIZE)), ("img\\caisse.png", (BLOCK_SIZE, BLOCK_SIZE)), ("img\\cle.png", (BLOCK_SIZE, BLOCK_SIZE/1.5)), ("img\\coffre.png", (BLOCK_SIZE, BLOCK_SIZE)),
-          ("img\\Palmier.png", (BLOCK_SIZE, BLOCK_SIZE)), ("img\\Pierre.png", (BLOCK_SIZE, BLOCK_SIZE/2)), ("img\\pont.png", (BLOCK_SIZE, BLOCK_SIZE/2)), ("img\\Tonneau.png", (BLOCK_SIZE, BLOCK_SIZE))]
+        # Définition des paramètres en jeu
+        self.running = True
+        self.clock = pygame.time.Clock()
+        self.solides = [1, 2, 3, 4, 8, 9]
+        self.anim = 0
+        self.flip = False
+        self.var_avancer = False
+        self.var_sauter = False
 
-block_textures = []
-asset_textures = []
+        # Lancement de la boucle principal du jeu
+        while self.running:
+            # Gestion des événements
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
 
-for block in blocks:
-    block_texture = pygame.transform.scale(pygame.image.load(block), (BLOCK_SIZE, BLOCK_SIZE))
-    block_textures.append(block_texture)
+            # Affichage du fond
+            self.screen.blit(self.asset_textures[0], (0, 0))
 
-for asset in assets:
-    asset_texture = pygame.transform.scale(pygame.image.load(asset[0]), asset[1])
-    asset_textures.append(asset_texture)
+            # Dessin de la map block par block avec la texture
+            for row_index, row in enumerate(self.map_matrice):
+                for col_index, block_type in enumerate(row):
+                    x = col_index * self.BLOCK_SIZE
+                    y = row_index * self.BLOCK_SIZE
 
-# Définir la matrice de la map
-map_matrix = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [5, 0, 0, 0, 0, 0, 3, 0, 7, 0, 8, 0, 9, 0, 0, 0, 0, 6],
-    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-]
+                    # Affichage des blocks du jeu
+                    if block_type != 0 and type(block_type) == int:
+                        self.screen.blit(self.asset_textures[block_type], (x, y))
 
-# Boucle principale
-running = True
-clock = pygame.time.Clock()
+                    # Traitement du personnage
+                    elif type(block_type) != int:
+                        if self.anim < 1:
+                            # Execution d'une instruction
+                            if instructions != []:
+                                if instructions[0] == "droite":
+                                    self.droite()
+                                    self.flip = True
+                                elif instructions[0] == "gauche":
+                                    self.gauche()
+                                    self.flip = False
+                                elif instructions[0] == "avancer":
+                                    self.anim = 1
+                                    self.var_avancer = True
+                                elif instructions[0] == "sauter":
+                                    self.anim = 1
+                                    self.var_sauter = True
+                                elif instructions[0] == "ouvrir":
+                                    self.ouvrir((row_index, col_index))
+                                instructions.remove(instructions[0])
+                            # Affichage du personnage (statique)
+                            self.screen.blit(self.asset_textures[11], (x, y))
+                        else:
+                            # Avancement du personnage
+                            if self.var_avancer:
+                                if (self.flip and self.map_matrice[row_index][col_index + 1] in self.solides) or (not self.flip and self.map_matrice[row_index][col_index - 1] in self.solides):
+                                    self.anim = 0
+                                    instructions.clear()
+                                    print("Vous êtes bloqué.")
+                                    break
+                                self.anim = self.avancer(x, y, (row_index, col_index))
+                                if self.anim == 0 and ((self.flip and self.map_matrice[row_index + 1][col_index + 1] not in self.solides) or (not self.flip and self.map_matrice[row_index + 1][col_index - 1] not in self.solides)):
+                                    self.anim = 1
 
-while running:
-    # Gestion des événements
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+                            # Saut du personnage
+                            elif self.var_sauter:
+                                self.anim = self.sauter(x, y, (row_index, col_index))
+                                if self.anim == 0:
+                                    if (self.flip and self.map_matrice[row_index][col_index + 1] in self.solides) or (not self.flip and self.map_matrice[row_index][col_index - 1] in self.solides):
+                                        self.anim = 1
+                                        self.var_avancer = True
+                                    else:
+                                        self.anim = 1
 
-    screen.blit(asset_textures[0], (0, 0))
+                            # Chute du personnage
+                            else:
+                                self.anim = self.tomber(x, y, (row_index, col_index))
 
-    # Dessin de la map block par block avec la texture
-    for row_index, row in enumerate(map_matrix):
-        for col_index, block_type in enumerate(row):
-            x = col_index * BLOCK_SIZE
-            y = row_index * BLOCK_SIZE
+            # Rafraîchissement de l'écran
+            pygame.display.flip()
 
-            if block_type != 0:
-                screen.blit(asset_textures[block_type], (x, y))
+            # Limite de tick par seconde
+            self.clock.tick(self.TPS)
 
-    # Rafraîchissement de l'écran
-    pygame.display.flip()
+        # Quitter Pygame
+        pygame.quit()
+        sys.exit()
 
-    # Limite de tick par seconde
-    clock.tick(TPS)
+    # Méthode pour tourner le personnage à droite
+    def droite(self):
+        if not self.flip:
+            self.asset_textures[11] = pygame.transform.flip(self.asset_textures[11], True, False)
 
-# Quitter Pygame
-pygame.quit()
-sys.exit()
+    # Méthode pour tourner le personnage à gauche
+    def gauche(self):
+        if self.flip:
+            self.asset_textures[11] = pygame.transform.flip(self.asset_textures[11], True, False)
 
+    # Méthode pour avancer le personnage
+    def avancer(self, x, y, index):
+        if self.flip:
+            self.screen.blit(self.asset_textures[11], (x + (self.BLOCK_SIZE / 10) * self.anim + 1, y))
+        elif not self.flip:
+            self.screen.blit(self.asset_textures[11], (x - (self.BLOCK_SIZE / 10) * self.anim + 1, y))
+        self.anim += 1
+        if self.anim == 11:
+            self.map_matrice[index[0]][index[1]] = self.map_matrice[index[0]][index[1]][1]
+            if self.flip:
+                self.map_matrice[index[0]][index[1] + 1] = (11, self.map_matrice[index[0]][index[1] + 1])
+            elif not self.flip:
+                self.map_matrice[index[0]][index[1] - 1] = (11, self.map_matrice[index[0]][index[1] - 1])
+            self.var_avancer = False
+            return 0
+        return self.anim
 
+    # Méthode pour faire sauter le personnage
+    def sauter(self, x, y, index):
+        self.screen.blit(self.asset_textures[11], (x, y - (self.BLOCK_SIZE / 10) * self.anim + 1))
+        self.anim += 1
+        if self.anim == 11:
+            self.map_matrice[index[0]][index[1]] = self.map_matrice[index[0]][index[1]][1]
+            self.map_matrice[index[0] - 1][index[1]] = (11, self.map_matrice[index[0] - 1][index[1]])
+            self.var_sauter = False
+            return 0
+        return self.anim
+
+    # Méthode pour faire tomber le personnage
+    def tomber(self, x, y, index):
+        self.screen.blit(self.asset_textures[11], (x, y + (self.BLOCK_SIZE / 10) * self.anim + 1))
+        self.anim += 1
+        if self.anim == 11:
+            self.map_matrice[index[0]][index[1]] = self.map_matrice[index[0]][index[1]][1]
+            self.map_matrice[index[0] + 1][index[1]] = (11, self.map_matrice[index[0] + 1][index[1]])
+            return 0
+        return self.anim
+
+    def ouvrir(self, index):
+        if self.map_matrice[index[0]][index[1]] == (11, 6): # And verify Key
+            print("Gagné :D !")
+            self.running = False
+        else:
+            print("Tu ne peux pas ouvrir.")
+
+# Définition des instructions possible
+def droite():
+    instructions.append("droite")
+
+def gauche():
+    instructions.append("gauche")
+
+def avancer():
+    instructions.append("avancer")
+
+def sauter():
+    instructions.append("sauter")
+
+def ouvrir():
+    instructions.append("ouvrir")
+
+def pygame_wrapper(coro):
+    yield from coro
+
+# Fonction pour lancer le jeu
+def lancer():
+    game = Pyrates()
+    wrap = pygame_wrapper(game)
+    wrap.send(None) # prime the coroutine
+    return game

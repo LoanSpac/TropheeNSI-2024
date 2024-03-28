@@ -1,5 +1,6 @@
 import pygame
 import sys
+from main import draw_text
 
 # Définition de la liste des instructions à utiliser
 instructions = []
@@ -35,16 +36,16 @@ class Pyrates:
             asset_texture = pygame.transform.scale(pygame.image.load(asset[0]), asset[1])
             self.asset_textures.append(asset_texture)
 
-        # Définition de la matrice de la map
-        self.map_matrice = [
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [(11, 0), 0, 6, 0, 2, 0, 0, 1, 2, 3, 4, 8, 9, 6, 0, 0, 0, 0],
-            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-        ]
+        # Définition de la grille du niveau
+        with open('niveaux.txt', 'r') as file:
+            lines = file.readlines()[8:15]
+            self.map_matrice = []
+            for line in lines:
+                ligne = list(map(int, (line.replace('\n', '')).split(", ")))
+                for block in ligne:
+                    if block == 11:
+                        ligne[ligne.index(block)] = (11, 0)
+                self.map_matrice.append(ligne)
 
         # Définition des paramètres en jeu
         self.running = True
@@ -54,13 +55,15 @@ class Pyrates:
         self.flip = False
         self.var_avancer = False
         self.var_sauter = False
+        self.var_key = False
 
         # Lancement de la boucle principal du jeu
         while self.running:
             # Gestion des événements
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.running = False
+                    pygame.quit()
+                    sys.exit()
 
             # Affichage du fond
             self.screen.blit(self.asset_textures[0], (0, 0))
@@ -76,7 +79,7 @@ class Pyrates:
                         self.screen.blit(self.asset_textures[block_type], (x, y))
 
                     # Traitement du personnage
-                    elif type(block_type) != int:
+                    elif type(block_type) == tuple:
                         if self.anim < 1:
                             # Execution d'une instruction
                             if instructions != []:
@@ -95,8 +98,14 @@ class Pyrates:
                                 elif instructions[0] == "ouvrir":
                                     self.ouvrir((row_index, col_index))
                                 instructions.remove(instructions[0])
+
                             # Affichage du personnage (statique)
                             self.screen.blit(self.asset_textures[11], (x, y))
+
+                            # Récupère la clé pour le personnage
+                            if block_type[1] == 5:
+                                self.var_key = True
+                                self.map_matrice[row_index][col_index] = (11, 0)
                         else:
                             # Avancement du personnage
                             if self.var_avancer:
@@ -122,6 +131,8 @@ class Pyrates:
                             # Chute du personnage
                             else:
                                 self.anim = self.tomber(x, y, (row_index, col_index))
+                                if self.anim == 0 and self.map_matrice[row_index + 2][col_index] not in self.solides:
+                                    self.anim = 1
 
             # Rafraîchissement de l'écran
             pygame.display.flip()
@@ -129,9 +140,30 @@ class Pyrates:
             # Limite de tick par seconde
             self.clock.tick(self.TPS)
 
+        self.victoire()
+
         # Quitter Pygame
         pygame.quit()
         sys.exit()
+
+    def victoire(self, running=True):
+        # Lancement de la boucle principal du jeu
+        while running:
+            # Gestion des événements
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+            # Affichage du fond
+            self.screen.blit(self.asset_textures[0], (0, 0))
+
+            draw_text("Vous avez gagné !", pygame.font.Font(None, 36), (0, 0, 0), self.screen, 300, 100)
+
+            # Rafraîchissement de l'écran
+            pygame.display.flip()
+
+            # Limite de tick par seconde
+            self.clock.tick(self.TPS)
 
     # Méthode pour tourner le personnage à droite
     def droite(self):
@@ -182,8 +214,7 @@ class Pyrates:
         return self.anim
 
     def ouvrir(self, index):
-        if self.map_matrice[index[0]][index[1]] == (11, 6): # And verify Key
-            print("Gagné :D !")
+        if self.map_matrice[index[0]][index[1]] == (11, 6) and self.var_key: # And verify Key
             self.running = False
         else:
             print("Tu ne peux pas ouvrir.")

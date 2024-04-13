@@ -13,5 +13,5 @@ Ce projet sera présenter lors du trophée de la NSI de 2024.
 
 ## Colaborateurs
 
-- [LoanSpac](https://github.com/LoanSpac/) (Pyrates, MCNL)
-- [osir66](https://github.com/LoanSpac/) (Pyrates)
+- [LoanSpac](https://github.com/LoanSpac/)
+- [osir66](https://github.com/LoanSpac/)
